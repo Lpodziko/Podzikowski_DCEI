@@ -1,10 +1,15 @@
+---
+title: "HW#3: US Annual Precipitation"
+author: "Laura Y. Podzikowski"
+date: "3/12/2018"
+output: pdf_document
+---
 
-dir()
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-#1) Can we see climate warming for ourselves by analyzing these data?
-#2) In what parts of the country are temperatures getting warmer? Are there any parts that actually got colder over 1950-2010?
-#3) Can we say, based on these data, What change has occurred in precipitation over the period?
-
+```{r pckgs uplddtfrm clndt, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #packages---------
 #***********************************************
 library(maptools)
@@ -31,7 +36,7 @@ WthrStnClean<-function(df){
   Countdf<-aggregate(df$Count,by=list(df$latlon),sum)
 
   Countdf["Include"]<-NA
-  TimePeriod<-40
+  TimePeriod<-39
 
   for(i in 1:NROW(Countdf)){
     Countdf$Include[i]<-if(Countdf$x[i]<TimePeriod){0}else{1}
@@ -46,6 +51,13 @@ WthrStnClean<-function(df){
 temp<-WthrStnClean(temp)
 precip<-WthrStnClean(precip)
 
+```
+
+#**Introduction**
+
+#**Results**
+###*US climate warms from 1950 - 2008*
+```{r code OBJ1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #Objective 1---------
 #***********************************************
 
@@ -56,19 +68,28 @@ MAT["ClimPrd"]<-NA
 for(i in 1:NROW(MAT)){
   MAT$ClimPrd[i]<-if(MAT$year[i]<=1980){0}else{1}
 }
-
-par(mfrow=c(1,2))
-
+```
+```{r plot1, echo=FALSE, eval=TRUE, include=TRUE, dev='png',fig.width = 7, fig.height = 4}
+layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
+par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
+ClmTempDiff<-mean(MAT$data[which(MAT$ClimPrd==1)])-mean(MAT$data[which(MAT$ClimPrd==0)])
+boxplot(data~ClimPrd, data=MAT, col=c("grey27","red"), las=1
+        ,xlab="Climate Period", xaxt="n", ylab="", yaxt="n")
+axis(1,c(1,2),c("1950-80","1981-2008"))
+axis(2, las=1)
+mtext(side=2,"MAT (F)", line=2.75)
+par(mar = c(4.3, 0, 1.4, 2.1))
 d1950<-density(MAT$data[which(MAT$ClimPrd==0)])
 y1950<-approxfun(d1950$x, d1950$y)
 ymax1950<-y1950(mean(MAT$data[which(MAT$ClimPrd==0)]))
+
 d1981<-density(MAT$data[which(MAT$ClimPrd==1)])
 y1981<-approxfun(d1981$x, d1981$y)
 ymax1981<-y1981(mean(MAT$data[which(MAT$ClimPrd==1)]))
 
 plot(density(MAT$data[which(MAT$ClimPrd==0)])
      ,xlim=c(min(MAT$data),max(MAT$data))
-     ,las=1,xlab="Temperature (F)", ylab="Density"
+     ,las=1,xlab="MAT (F)", ylab="",yaxt="n"
      ,main="",lty=3,lwd=2,col="grey27")
 segments(mean(MAT$data[which(MAT$ClimPrd==0)]),0,
          mean(MAT$data[which(MAT$ClimPrd==0)]), 
@@ -77,14 +98,12 @@ lines(density(MAT$data[which(MAT$ClimPrd==1)]), col="red", xlim=c(min(MAT$data),
 segments(mean(MAT$data[which(MAT$ClimPrd==1)]),0,
          mean(MAT$data[which(MAT$ClimPrd==1)]), 
          ymax1981,lwd=2,col="red")
+axis(side=4,las=1)
+mtext(side=4,"Density",line=2.25)
+```
+Figure 1: Mean annual temperature (F) across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
 
-ClmTempDiff<-mean(MAT$data[which(MAT$ClimPrd==1)])-mean(MAT$data[which(MAT$ClimPrd==0)])
-
-boxplot(data~ClimPrd, data=MAT, col=c("grey27","red"), las=1
-        ,xlab="Climate Period", xaxt="n", ylab="Temperature (F)")
-axis(1,c(1,2),c("1950-80","1981-2008"))
-
-
+```{r code OBJ2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #Objective 2---------
 #***********************************************
 
@@ -111,15 +130,18 @@ names(MAT.diff.rgnprd)[1]<-paste("region")
 names(MAT.diff.rgnprd)[2]<-paste("changetemp")
 MAT.diff.rgnprd<-MAT.diff.rgnprd[rev(order(MAT.diff.rgnprd$changetemp)),]
 
+
+```
+```{r plot2, echo=FALSE, eval=TRUE, include=TRUE, dev='png',fig.width = 7, fig.height = 4}
 #plots
 
 layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
 par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
 NumRegions<-NROW(unique(ClmtRgns$region))
 RegionColors<-heat.colors(NumRegions)
-interaction.plot(MAT.region$ClimPrd,MAT.region$region,MAT.region$data, col=RegionColors, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=T, yaxt="n")
+interaction.plot(MAT.region$ClimPrd,MAT.region$region,MAT.region$data, col=RegionColors, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n")
 axis(side=2, las=1)
-mtext("Mean Annual Temp. (F)", side=2, line=2.25)
+mtext("MAT (F)", side=2, line=2.25)
 mtext("Climate Period", side=1, line=2)
 xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
 xvalclmtprd1<-rep(2,NROW(ClmtPrd1))
@@ -134,12 +156,9 @@ barplot(barplotvector, col=RegionColors, las=1,
         yaxt="n")
 xlabarplot<-c(0.7,1.93,3.17,4.33,5.48,6.8,7.88,9.11,10.34,11.58,12.81)
 text(cex=1, x=xlabarplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
-mtext(side=4,"Change Mean Annual Temp. (F)", line=2.5)
+mtext(side=4,"Change MAT (F)", line=2.5)
 axis(side=4, las=1)
 box()
 
-
-
-#Objective 3---------
-#***********************************************
-plot(data~year, data=precip)
+```
+Figure 2: 
