@@ -24,22 +24,43 @@ ClmtRgns<-read.csv("ClimateRegionsUSA.csv")
 #***********************************************
 
 temp<-na.exclude(temp)
-dim(temp)
+temp["latlon"]<-paste(temp$lat,temp$lon)
+temp$latlon<-as.factor(temp$latlon)
+temp["Count"]<-paste(1)
+temp$Count<-as.numeric(temp$Count)
+CountTemp<-aggregate(temp$Count,by=list(temp$latlon),sum)
+
+CountTemp["Include"]<-NA
+TimePeriod<-39
+
+for(i in 1:NROW(CountTemp)){
+  CountTemp$Include[i]<-if(CountTemp$x[i]<TimePeriod){0}else{1}
+}
+
+names(CountTemp)[1]<-paste("latlon") 
+names(CountTemp)[2]<-paste("NoYearData") 
+temp<-left_join(temp,CountTemp,by="latlon")
+temp<-subset(temp,Include==1)
+
+
 precip<-na.exclude(precip)
-dim(precip)
+precip["latlon"]<-paste(precip$lat,precip$lon)
+precip$latlon<-as.factor(precip$latlon)
+precip["Count"]<-paste(1)
+precip$Count<-as.numeric(precip$Count)
+Countprecip<-aggregate(precip$Count,by=list(precip$latlon),sum)
 
-str(precip)
-summary(precip)
-str(temp)
-summary(temp)
+Countprecip["Include"]<-NA
+TimePeriod<-39
 
-#Clean data
-#***********************************************
+for(i in 1:NROW(Countprecip)){
+  Countprecip$Include[i]<-if(Countprecip$x[i]<TimePeriod){0}else{1}
+}
 
-NumStates<-NROW(unique(ClmtRgns$state))
-NumRegions<-NROW(unique(ClmtRgns$region))
-StateColors<-primary.colors(NumStates)
-RegionColors<-rainbow(NumRegions)
+names(Countprecip)[1]<-paste("latlon") 
+names(Countprecip)[2]<-paste("NoYearData") 
+precip<-left_join(precip,Countprecip,by="latlon")
+precip<-subset(precip,Include==1)
 
 #Objective 1---------
 #***********************************************
@@ -54,15 +75,40 @@ for(i in 1:NROW(MAT)){
   MAT$ClimPrd[i]<-if(MAT$year[i]<=1980){0}else{1}
 }
 
-print(tapply(MAT$data,MAT$ClimPrd,mean))
-print(tapply(MAT$data,MAT$ClimPrd,sd))
+print(meanMAT<-tapply(MAT$data,MAT$ClimPrd,mean))
+print(sdMAT<-tapply(MAT$data,MAT$ClimPrd,sd))
 
-quartz()
-par(mfrow=c(2,1))
-plot(density(MAT$data[which(MAT$ClimPrd==0)]), xlim=c(min(MAT$data),max(MAT$data)))
-abline(v=mean((MAT$data[which(MAT$ClimPrd==0)])), col="red")
-plot(density(MAT$data[which(MAT$ClimPrd==1)]), xlim=c(min(MAT$data),max(MAT$data)))
-abline(v=mean((MAT$data[which(MAT$ClimPrd==1)])), col="red")
+summary(MAT$data[which(MAT$ClimPrd==0)])
+summary(MAT$data[which(MAT$ClimPrd==1)])
+
+par(mfrow=c(1,2))
+
+d1950<-density(MAT$data[which(MAT$ClimPrd==0)])
+y1950<-approxfun(d1950$x, d1950$y)
+ymax1950<-y1950(mean(MAT$data[which(MAT$ClimPrd==0)]))
+
+d1981<-density(MAT$data[which(MAT$ClimPrd==1)])
+y1981<-approxfun(d1981$x, d1981$y)
+ymax1981<-y1981(mean(MAT$data[which(MAT$ClimPrd==1)]))
+
+plot(density(MAT$data[which(MAT$ClimPrd==0)])
+     ,xlim=c(min(MAT$data),max(MAT$data))
+     ,las=1,xlab="Temperature (F)", ylab="Density"
+     ,main="",lty=3,lwd=2,col="grey27")
+segments(mean(MAT$data[which(MAT$ClimPrd==0)]),0,
+         mean(MAT$data[which(MAT$ClimPrd==0)]), 
+         ymax1950,lwd=2,lty=3)
+lines(density(MAT$data[which(MAT$ClimPrd==1)]), col="red", xlim=c(min(MAT$data),max(MAT$data)), lwd=2)
+segments(mean(MAT$data[which(MAT$ClimPrd==1)]),0,
+         mean(MAT$data[which(MAT$ClimPrd==1)]), 
+         ymax1981,lwd=2,col="red")
+
+ClmTempDiff<-mean(MAT$data[which(MAT$ClimPrd==1)])-mean(MAT$data[which(MAT$ClimPrd==0)])
+
+boxplot(data~ClimPrd, data=MAT, col=c("grey27","red"), las=1
+        ,xlab="Climate Period", xaxt="n", ylab="Temperature (F)")
+axis(1,c(1,2),c("1950-80","1981-2008"))
+
 
 #Objective 2---------
 #***********************************************
@@ -77,5 +123,20 @@ MAT.region["ClimPrd"]<-NA
 for(i in 1:NROW(MAT.region)){
   MAT.region$ClimPrd[i]<-if(MAT.region$year[i]<=1980){0}else{1}
 }
+MAT.region$ClimPrd<-as.numeric(MAT.region$ClimPrd)
 
-interaction.plot(MAT.region$ClimPrd,MAT.region$region,MAT.region$data, col=RegionColors, lwd=3, las=1)
+summary(lmMAT.region<-lm(data~ClimPrd*region, data=MAT.region))
+anova(lmMAT.region)
+plot(lmMAT.region, which=c(1,2))
+shapiro.test(resid(lmMAT.region))
+
+NumStates<-NROW(unique(ClmtRgns$state))
+NumRegions<-NROW(unique(ClmtRgns$region))
+StateColors<-primary.colors(NumStates)
+RegionColors<-rainbow(NumRegions)
+
+interaction.plot(MAT.region$ClimPrd,MAT.region$region,MAT.region$data, col=RegionColors, lwd=3, las=1, ylab="Temperature (F)",xlab="Climate Period", xaxt="n")
+axis(1,c(1,2),c("1950-80","1981-2008"))
+
+#Objective 3---------
+#***********************************************
