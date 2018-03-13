@@ -49,41 +49,66 @@ precip<-WthrStnClean(precip)
 #Objective 1---------
 #***********************************************
 
-MAT<-aggregate(temp$data,by=list(temp$year), mean)
-names(MAT)[2]<-paste("data") 
-names(MAT)[1]<-paste("year") 
-MAT["ClimPrd"]<-NA
-for(i in 1:NROW(MAT)){
-  MAT$ClimPrd[i]<-if(MAT$year[i]<=1980){0}else{1}
+meanUSweather<-function(df){
+  MAT<-aggregate(df$data,by=list(df$year), mean)
+  names(MAT)[2]<-paste("data") 
+  names(MAT)[1]<-paste("year") 
+  MAT["ClimPrd"]<-NA
+  for(i in 1:NROW(MAT)){
+    MAT$ClimPrd[i]<-if(MAT$year[i]<=1980){0}else{1}
+  }
+  return(MAT)
 }
 
-par(mfrow=c(1,2))
+MAT.temp<-meanUSweather(temp)
 
-d1950<-density(MAT$data[which(MAT$ClimPrd==0)])
-y1950<-approxfun(d1950$x, d1950$y)
-ymax1950<-y1950(mean(MAT$data[which(MAT$ClimPrd==0)]))
-d1981<-density(MAT$data[which(MAT$ClimPrd==1)])
-y1981<-approxfun(d1981$x, d1981$y)
-ymax1981<-y1981(mean(MAT$data[which(MAT$ClimPrd==1)]))
+Xaxislab.plota<-"Climate Period"
+Xaxiscat.plota<-c("1950-80","1981-2008")
+Yaxislab.plota<-"Mean Annual Temp. (F)"
+Xaxislab.plotb<-"Mean Annual Temp.(F)"
+Yaxislab.plotb<-"Density"
+ClmtPrd1color<-"grey27"
+ClmtPrd2color<-"red"
+plotname<-"Objective1.png"
+plotcolors<-c(ClmtPrd1color,ClmtPrd2color)
 
-plot(density(MAT$data[which(MAT$ClimPrd==0)])
-     ,xlim=c(min(MAT$data),max(MAT$data))
-     ,las=1,xlab="Temperature (F)", ylab="Density"
-     ,main="",lty=3,lwd=2,col="grey27")
-segments(mean(MAT$data[which(MAT$ClimPrd==0)]),0,
-         mean(MAT$data[which(MAT$ClimPrd==0)]), 
-         ymax1950,lwd=2,lty=3)
-lines(density(MAT$data[which(MAT$ClimPrd==1)]), col="red", xlim=c(min(MAT$data),max(MAT$data)), lwd=2)
-segments(mean(MAT$data[which(MAT$ClimPrd==1)]),0,
-         mean(MAT$data[which(MAT$ClimPrd==1)]), 
-         ymax1981,lwd=2,col="red")
+ClmtPrd1<-c(MAT.temp$data[which(MAT.temp$ClimPrd==0)])
+ClmtPrd2<-c(MAT.temp$data[which(MAT.temp$ClimPrd==1)])
 
-ClmTempDiff<-mean(MAT$data[which(MAT$ClimPrd==1)])-mean(MAT$data[which(MAT$ClimPrd==0)])
 
-boxplot(data~ClimPrd, data=MAT, col=c("grey27","red"), las=1
-        ,xlab="Climate Period", xaxt="n", ylab="Temperature (F)")
-axis(1,c(1,2),c("1950-80","1981-2008"))
+plotfnct<-function(df){
+  d1950<-density(df$data[which(df$ClimPrd==0)])
+  y1950<-approxfun(d1950$x, d1950$y)
+  ymax1950<-y1950(mean(df$data[which(df$ClimPrd==0)]))
+  d1981<-density(df$data[which(df$ClimPrd==1)])
+  y1981<-approxfun(d1981$x, d1981$y)
+  ymax1981<-y1981(mean(df$data[which(df$ClimPrd==1)]))
 
+  png(plotname, width = 7, height = 4, units = 'in', res = 800)
+  layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
+  par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
+  boxplot(data~ClimPrd, data=df, col=plotcolors, las=1
+          ,xlab=Xaxislab.plota, xaxt="n", ylab="", yaxt="n")
+  axis(1,c(1,2),Xaxiscat.plota)
+  axis(2, las=1)
+  mtext(side=2,Yaxislab.plota, line=2.85)
+  par(mar = c(4.3, 0, 1.4, 2.1))
+  plot(density(ClmtPrd1)
+       ,xlim=c(min(df$data),max(df$data))
+       ,las=1,xlab=Xaxislab.plotb, ylab="",yaxt="n"
+       ,main="",lty=3,lwd=2,col=ClmtPrd1color)
+  segments(mean(ClmtPrd1),0, mean(ClmtPrd1), 
+           ymax1950,lwd=2,lty=3,col=ClmtPrd1color)
+  lines(density(ClmtPrd2), col=ClmtPrd2color, 
+        xlim=c(min(df$data),max(df$data)), lwd=2)
+  segments(mean(ClmtPrd2),0,mean(ClmtPrd2), 
+           ymax1981,lwd=2,col=ClmtPrd2color)
+  axis(side=4,las=1)
+  mtext(side=4,Yaxislab.plotb,line=2.75)
+  dev.off()
+}
+
+plotfnct(MAT.temp)
 
 #Objective 2---------
 #***********************************************
@@ -139,7 +164,22 @@ axis(side=4, las=1)
 box()
 
 
-
 #Objective 3---------
 #***********************************************
-plot(data~year, data=precip)
+MAT.precip<-meanUSweather(precip)
+
+Xaxislab.plota<-"Climate Period"
+Xaxiscat.plota<-c("1950-80","1981-2008")
+Yaxislab.plota<-"Mean Annual Precip. (in)"
+Xaxislab.plotb<-"Mean Annual Precip.(in)"
+Yaxislab.plotb<-"Density"
+ClmtPrd1color<-"grey27"
+ClmtPrd2color<-"red"
+plotname<-"Objective1.png"
+plotcolors<-c(ClmtPrd1color,ClmtPrd2color)
+
+ClmtPrd1<-c(MAT.precip$data[which(MAT.precip$ClimPrd==0)])
+ClmtPrd2<-c(MAT.precip$data[which(MAT.precip$ClimPrd==1)])
+
+plotfnct(MAT.precip)
+
