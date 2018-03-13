@@ -11,6 +11,7 @@ library(maptools)
 #data(wrld_simpl)
 library(colorRamps)
 library(dplyr)
+library(RColorBrewer)
 
 
 #upload dataframes---------
@@ -112,7 +113,6 @@ plotfnct(MAT.temp)
 
 #Objective 2---------
 #***********************************************
-
 temp<-left_join(temp,ClmtRgns,by="state")
 MAT.region<-aggregate(temp$data,by=list(temp$year,temp$region), mean)
 names(MAT.region)[3]<-paste("data") 
@@ -130,6 +130,12 @@ names(MAT.rgnprd)[1]<-paste("ClimPrd")
 names(MAT.rgnprd)[2]<-paste("region") 
 ClmtPrd0<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==0)])
 ClmtPrd1<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==1)])
+ClmtPrd1labels<-(MAT.rgnprd$region[which(MAT.rgnprd$ClimPrd==1)])
+clmtPrddf<-data.frame(ClmtPrd1, ClmtPrd1labels)
+clmtPrddf<-clmtPrddf[rev(order(clmtPrddf$ClmtPrd1)),]
+clmtPrddf["clmtPrddfabv"]<-c("HI","SE","S","W","C","SW","NW","NE","NEC","NWC","AK")
+leftside<-  c("",  "", "S","","" ,"SW","","NE","","NWC","")
+rightside<-c("HI","SE","","W","C","", "NW","","NEC","","AK")  
 
 MAT.diff.rgnprd<-aggregate(MAT.rgnprd$data,by=list(MAT.rgnprd$region),diff)
 names(MAT.diff.rgnprd)[1]<-paste("region") 
@@ -142,7 +148,9 @@ layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
 par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
 NumRegions<-NROW(unique(ClmtRgns$region))
 RegionColors<-heat.colors(NumRegions)
-interaction.plot(MAT.region$ClimPrd,MAT.region$region,MAT.region$data, col=RegionColors, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=T, yaxt="n")
+with(MAT.region,interaction.plot(ClimPrd,region,data, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n"), xlim=c(0,5))
+text(2.025,clmtPrddf$ClmtPrd1,rightside, adj=0, cex=0.75)
+text(0.975,clmtPrddf$ClmtPrd1,leftside, adj=1, cex=0.75)
 axis(side=2, las=1)
 mtext("Mean Annual Temp. (F)", side=2, line=2.25)
 mtext("Climate Period", side=1, line=2)
@@ -182,4 +190,61 @@ ClmtPrd1<-c(MAT.precip$data[which(MAT.precip$ClimPrd==0)])
 ClmtPrd2<-c(MAT.precip$data[which(MAT.precip$ClimPrd==1)])
 
 plotfnct(MAT.precip)
+
+precip<-left_join(precip,ClmtRgns,by="state")
+MAP.region<-aggregate(precip$data,by=list(precip$year,precip$state), mean)
+names(MAP.region)[3]<-paste("data") 
+names(MAP.region)[1]<-paste("year") 
+names(MAP.region)[2]<-paste("state") 
+
+MAP.region["ClimPrd"]<-NA
+for(i in 1:NROW(MAP.region)){
+  MAP.region$ClimPrd[i]<-if(MAP.region$year[i]<=1980){0}else{1}
+}
+
+MAP.rgnprd<-aggregate(MAP.region$data,by=list(MAP.region$ClimPrd,MAP.region$state), mean)
+names(MAP.rgnprd)[3]<-paste("data") 
+names(MAP.rgnprd)[1]<-paste("ClimPrd") 
+names(MAP.rgnprd)[2]<-paste("state") 
+ClmtPrd0<-(MAP.rgnprd$data[which(MAP.rgnprd$ClimPrd==0)])
+ClmtPrd1<-(MAP.rgnprd$data[which(MAP.rgnprd$ClimPrd==1)])
+ClmtPrd1labels<-(MAP.rgnprd$state[which(MAP.rgnprd$ClimPrd==1)])
+clmtPrddf<-data.frame(ClmtPrd1, ClmtPrd1labels)
+clmtPrddf<-clmtPrddf[rev(order(clmtPrddf$ClmtPrd1)),]
+
+MAP.diff.rgnprd<-aggregate(MAP.rgnprd$data,by=list(MAP.rgnprd$state),diff)
+names(MAP.diff.rgnprd)[1]<-paste("state") 
+names(MAP.diff.rgnprd)[2]<-paste("changeprecip")
+MAP.diff.rgnprd<-MAP.diff.rgnprd[rev(order(MAP.diff.rgnprd$changeprecip)),]
+
+#plots
+quartz()
+
+layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
+par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
+RegionColors.1<-colorRampPalette(brewer.pal(9,'Blues'))(9)
+RegionColors<-c(RegionColors.1[9],RegionColors.1[7],RegionColors.1[5])
+with(MAP.region,interaction.plot(ClimPrd,state,data,
+                 lwd=3, las=1, ylab="",xlab="", xaxt="n", 
+                 legend=F, yaxt="n"))
+text(2.025,ClmtPrd1,clmtPrddf$ClmtPrd1labels, adj=0, cex=0.75)
+axis(side=2, las=1)
+mtext("Mean Annual Temp. (F)", side=2, line=2.25)
+mtext("Climate Period", side=1, line=2)
+xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
+xvalclmtprd1<-rep(2,NROW(ClmtPrd1))
+#points(xvalclmtprd0,ClmtPrd0, pch=22)
+#points(xvalclmtprd1,ClmtPrd1, pch=22)
+axis(1,c(1,2),c("1950-80","1981-2008"))
+par(mar = c(4.3, 0, 1.4, 2.1))
+barplotvector<-MAP.diff.rgnprd$changeprecip
+barplotlabels<-MAP.diff.rgnprd$state
+barplot(barplotvector, col=RegionColors, las=1, 
+        ylim=c(0,max(MAP.diff.rgnprd$changeprecip)+0.25),
+        yaxt="n")
+xlabarplot<-c(0.7,1.93,3.17)
+text(cex=1, x=xlabarplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
+mtext(side=4,"Change Mean Annual Temp. (F)", line=2.5)
+axis(side=4, las=1)
+box()
 

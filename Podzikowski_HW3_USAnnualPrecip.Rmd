@@ -55,6 +55,8 @@ precip<-WthrStnClean(precip)
 
 #**Introduction**
 
+#**Methods**
+
 #**Results**
 ###*US climate warms from 1950 - 2008*
 ```{r code OBJ1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
@@ -127,7 +129,7 @@ plotfnct<-function(df){
 plotfnct(MAT.temp)
 ```
 ![](Objective1.png)
-Figure 1: Mean annual temperature (F) across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
+Figure 1: Mean annual temperature (F), MAT, across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
 
 ###*US climate warms from 1950 - 2008*
 ```{r code OBJ2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
@@ -151,6 +153,12 @@ names(MAT.rgnprd)[1]<-paste("ClimPrd")
 names(MAT.rgnprd)[2]<-paste("region") 
 ClmtPrd0<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==0)])
 ClmtPrd1<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==1)])
+ClmtPrd1labels<-(MAT.rgnprd$region[which(MAT.rgnprd$ClimPrd==1)])
+clmtPrddf<-data.frame(ClmtPrd1, ClmtPrd1labels)
+clmtPrddf<-clmtPrddf[rev(order(clmtPrddf$ClmtPrd1)),]
+clmtPrddf["clmtPrddfabv"]<-c("HI","SE","S","W","C","SW","NW","NE","NEC","NWC","AK")
+leftside<-  c("",  "", "S","","" ,"SW","","NE","","NWC","")
+rightside<-c("HI","SE","","W","C","", "NW","","NEC","","AK")  
 
 MAT.diff.rgnprd<-aggregate(MAT.rgnprd$data,by=list(MAT.rgnprd$region),diff)
 names(MAT.diff.rgnprd)[1]<-paste("region") 
@@ -166,8 +174,10 @@ layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
 par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
 NumRegions<-NROW(unique(ClmtRgns$region))
 RegionColors<-heat.colors(NumRegions)
-interaction.plot(MAT.region$ClimPrd,MAT.region$region,MAT.region$data, col=RegionColors, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n")
+with(MAT.region,interaction.plot(ClimPrd,region,data, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n"), xlim=c(0,5))
 axis(side=2, las=1)
+text(2.025,clmtPrddf$ClmtPrd1,rightside, adj=0, cex=0.75)
+text(0.975,clmtPrddf$ClmtPrd1,leftside, adj=1, cex=0.75)
 mtext("MAT (F)", side=2, line=2.25)
 mtext("Climate Period", side=1, line=2)
 xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
@@ -214,4 +224,4 @@ ClmtPrd2<-c(MAT.precip$data[which(MAT.precip$ClimPrd==1)])
 plotfnct(MAT.precip)
 ```
 ![](Objective3.png)
-Figure 3: Mean annual Precipitation (in.) across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
+Figure 3: Mean annual Precipitation (in.), MAP, across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
