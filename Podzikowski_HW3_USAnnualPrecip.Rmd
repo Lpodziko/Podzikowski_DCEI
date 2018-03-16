@@ -168,36 +168,11 @@ MAT.diff.rgnprd<-MAT.diff.rgnprd[rev(order(MAT.diff.rgnprd$changetemp)),]
 
 ```
 ```{r plot2, echo=FALSE, eval=TRUE, include=TRUE, dev='png',fig.width = 7, fig.height = 4}
-#plots
 
-layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
-par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
-NumRegions<-NROW(unique(ClmtRgns$region))
-RegionColors<-heat.colors(NumRegions)
-with(MAT.region,interaction.plot(ClimPrd,region,data, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n"), xlim=c(0,5))
-axis(side=2, las=1)
-text(2.025,clmtPrddf$ClmtPrd1,rightside, adj=0, cex=0.75)
-text(0.975,clmtPrddf$ClmtPrd1,leftside, adj=1, cex=0.75)
-mtext("MAT (F)", side=2, line=2.25)
-mtext("Climate Period", side=1, line=2)
-xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
-xvalclmtprd1<-rep(2,NROW(ClmtPrd1))
-#points(xvalclmtprd0,ClmtPrd0, pch=22)
-#points(xvalclmtprd1,ClmtPrd1, pch=22)
-axis(1,c(1,2),c("1950-80","1981-2008"))
-par(mar = c(4.3, 0, 1.4, 2.1))
-barplotvector<-MAT.diff.rgnprd$changetemp
-barplotlabels<-MAT.diff.rgnprd$region
-barplot(barplotvector, col=RegionColors, las=1, 
-        ylim=c(0,max(MAT.diff.rgnprd$changetemp)+0.25),
-        yaxt="n")
-xlabarplot<-c(0.7,1.93,3.17,4.33,5.48,6.8,7.88,9.11,10.34,11.58,12.81)
-text(cex=1, x=xlabarplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
-mtext(side=4,"Change MAT (F)", line=2.5)
-axis(side=4, las=1)
-box()
 
 ```
+
+![](Objective2.png)
 Figure 2: 
 
 ###*US climate warms from 1950 - 2008*
@@ -225,3 +200,4 @@ plotfnct(MAT.precip)
 ```
 ![](Objective3.png)
 Figure 3: Mean annual Precipitation (in.), MAP, across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
+![](Objective3b.png)
