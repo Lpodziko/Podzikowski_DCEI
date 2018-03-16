@@ -22,9 +22,20 @@ library(RColorBrewer)
 #upload dataframes---------
 #***********************************************
 
-precip<-readRDS("USAAnnualPcpn1950_2008.rds")
-temp<-readRDS("USAAnnualTemp1950_2008.rds")
+precip<-readRDS("USAAnnualPcpn1950_2016.rds")
+temp<-readRDS("USAAnnualTemp1950_2016.rds")
 ClmtRgns<-read.csv("ClimateRegionsUSA.csv")
+
+subsetyears<-function(df){
+df$Year.cut<-cut(df$year, c((min(df$year)-1),2010,(max(df$year))+1), labels=c(0,1))
+df<-subset(df,Year.cut==0)
+return(df)
+}
+
+temp<-subsetyears(temp)
+precip<-subsetyears(precip)
+
+names(temp)[3]<-paste("data") 
 
 #Clean data--------
 #***********************************************
@@ -61,14 +72,16 @@ precip<-WthrStnClean(precip)
 
 ```
 
-#**Introduction**
+##**Introduction**
+Altering the balance of greenhouse gases in Earth's atmosphere has elevated temperatures and altered precipitation regimes across the globe; yet at regional scales climate change can have positive, negative, and even no effect on both.  Elevated atmospheric concentrations of carbon dioxide, CO~2~, are largely implicated in global climate changes over the last century.  Independent of mechanism, determining the direction of temperature and precipitation changes on a regional scale is crucial for mitigating the effects of climate change.  We ask if the temperature and precipitation in N. America, specifically in the United States, has increased since the mid-1900s?  We hope our work will shed light on continental scale changes in climate over the last half a century.   
 
-Altering the balance of greenhouse gases in Earth's atmosphere has elevated temperatures and altered precipitation regimes across the globe; yet at a regional scale climate change can have positive, negative, and even no effect on temperature and precipitations.  Elevated atmospheric concentrations of carbon dioxide, CO~2~, are largely implicated in global climate changes over the last century.  The shift in balance of atmosphic greenhouse gases .  We explore if the temperature and precipitation in N. America, specifically in the United States, has changed since the mid-1900s.  We hope     
+##**Methods**
+Temperature and precipitation data were downloaded from the Applied Climate Information System. Weather stations with less than 40 years worth of available data were removed to ensure short-term, year-to-year fluctuations did not bias our analysis.  We evaluated whether climate changed by comparing mean temperature and precipitation over ~30 year time periods.  We defined baseline conditions as 1950-1980 (Smith and Pitts 1997) and 1981-2010 as the climate change period for comparison.  We further defined climate regions to explore the interaction between climate and region in the United States.  We classified temperature into regional means using nine groups in the contiguous United States (Karl and Koss 1984); Alaska and Hawaii were grouped into their own climate regions totaling 11.  We only had precipitation data from three states, Ohio, Tennessee, and Alabama; rather than using regions, we grouped by state to evaluate the interaction between climate and small-scale changes in precipitation.   
+![](us-climate-regions.png)
 
-#**Methods**
+**Figure 1:**  Map of US climate regions used to classify states. Image curtosy of the National Oceanic and Atmospheric Administration website: <https://www.ncdc.noaa.gov/monitoring-references/maps/us-climate-regions.php>
 
-#**Results**
-###*US climate warms from 1950 - 2008*
+##**Results**
 ```{r code OBJ1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #Objective 1---------
 #***********************************************
@@ -90,62 +103,6 @@ MAweather<-function(df){
 MAT.temp<-MAweather(temp)
 
 ```
-```{r plot1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
-#setting the many plot parameters
-Xaxislab.plota<-"Climate Period"
-Xaxiscat.plota<-c("1950-80","1981-2008")
-Yaxislab.plota<-"MAT (F)"
-Xaxislab.plotb<-"MAT (F)"
-Yaxislab.plotb<-"Density"
-ClmtPrd1color<-"grey27"
-ClmtPrd2color<-heat.colors(1)
-plotname<-"Objective1.png"
-plotcolors<-c(ClmtPrd1color,ClmtPrd2color)
-
-ClmtPrd1<-c(MAT.temp$data[which(MAT.temp$ClimPrd==0)])
-ClmtPrd2<-c(MAT.temp$data[which(MAT.temp$ClimPrd==1)])
-
-
-plotfnct<-function(df){
-  #Creating the density functions
-  d1950<-density(df$data[which(df$ClimPrd==0)])
-  y1950<-approxfun(d1950$x, d1950$y)
-  ymax1950<-y1950(mean(df$data[which(df$ClimPrd==0)]))
-  d1981<-density(df$data[which(df$ClimPrd==1)])
-  y1981<-approxfun(d1981$x, d1981$y)
-  ymax1981<-y1981(mean(df$data[which(df$ClimPrd==1)]))
-
-  #Plotting
-  png(plotname, width = 7, height = 4, units = 'in', res = 800)
-  layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
-  par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
-  boxplot(data~ClimPrd, data=df, col=plotcolors, las=1
-          ,xlab=Xaxislab.plota, xaxt="n", ylab="", yaxt="n")
-  axis(1,c(1,2),Xaxiscat.plota)
-  axis(2, las=1)
-  mtext(side=2,Yaxislab.plota, line=2.85)
-  par(mar = c(4.3, 0, 1.4, 2.1))
-  plot(density(ClmtPrd1)
-       ,xlim=c(min(df$data),max(df$data))
-       ,las=1,xlab=Xaxislab.plotb, ylab="",yaxt="n"
-       ,main="",lty=3,lwd=2,col=ClmtPrd1color)
-  segments(mean(ClmtPrd1),0, mean(ClmtPrd1), 
-           ymax1950,lwd=2,lty=3,col=ClmtPrd1color)
-  lines(density(ClmtPrd2), col=ClmtPrd2color, 
-        xlim=c(min(df$data),max(df$data)), lwd=2)
-  segments(mean(ClmtPrd2),0,mean(ClmtPrd2), 
-           ymax1981,lwd=2,col=ClmtPrd2color)
-  axis(side=4,las=1)
-  mtext(side=4,Yaxislab.plotb,line=2.75)
-  dev.off()
-}
-
-plotfnct(MAT.temp)
-```
-![](Objective1.png)
-Figure 1: Mean annual temperature (F), MAT, across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
-
-###*US climate warms from 1950 - 2008*
 ```{r code OBJ2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 MAweather.RGN<-function(df){
   df<-left_join(df,ClmtRgns,by="state")
@@ -169,6 +126,88 @@ MAT.rgnprd<-MAweather.RGN(temp)
 MAT.diff.rgnprd<-MAweather.RGNdiff(MAT.rgnprd)
 
 ```
+Mean annual temperature increased `r round(mean(MAT.temp$data[which(MAT.temp$ClimPrd==1)]-mean(MAT.temp$data[which(MAT.temp$ClimPrd==0)])),2)` F from 1950-1980 to 1981-2010.  With increased temperatures we observed a flattening of the density function, indicating a change in the likelihood of events that would have been rare under baseline climate conditions (Fig. 2).  In all US climate regions mean annual temperature increased in 1981-2010.  We observed the largest change in mean annual temperature in Alaska, the NW central (northern Rockies and plains), and the NE central(upper midwest) regions.  We observed the smallest increases in mean annual temperature in the southeast, hawaii, southwest, and southern regions (Fig. 3).  
+
+```{r code OBJ3, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+#Objective 3---------
+#***********************************************
+MAP<-MAweather(precip)
+
+MAweather.ST<-function(df){
+  df<-left_join(df,ClmtRgns,by="state")
+  df$ClimPrd<-cut(df$year, c((min(df$year)-1),1980,(max(df$year))+1), labels=c(0,1))
+  MAT.rgnprd<-aggregate(df$data,by=list(df$ClimPrd,df$state), mean)
+  names(MAT.rgnprd)[3]<-paste("data") 
+  names(MAT.rgnprd)[1]<-paste("ClimPrd") 
+  names(MAT.rgnprd)[2]<-paste("region")
+  return(MAT.rgnprd)
+}
+
+MAP.rgnprd<-MAweather.ST(precip)
+MAP.diff.rgnprd<-MAweather.RGNdiff(MAP.rgnprd)
+
+```
+
+Mean annual precipitation increased `r round(mean(MAP$data[which(MAP$ClimPrd==1)]-mean(MAP$data[which(MAP$ClimPrd==0)])),2)` inches from 1950-1980 to 1981-2010 (Fig. 4).  We observed the largest change in mean annual precipitation in Ohio and the slight decrease in mean annual precipitation in Alabama (Fig. 5).  
+
+```{r plot1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+#setting the many plot parameters
+Xaxislab.plota<-"Climate Period"
+Xaxiscat.plota<-c("1950-80","1981-2010")
+Yaxislab.plota<-"MAT (F)"
+Xaxislab.plotb<-"MAT (F)"
+Yaxislab.plotb<-"Density"
+ClmtPrd1color<-"grey27"
+ClmtPrd2color<-heat.colors(1)
+plotname<-"Objective1.png"
+plotcolors<-c(ClmtPrd1color,ClmtPrd2color)
+
+
+ClmtPrd1<-c(MAT.temp$data[which(MAT.temp$ClimPrd==0)])
+ClmtPrd2<-c(MAT.temp$data[which(MAT.temp$ClimPrd==1)])
+
+plotfnct<-function(df){
+  #Creating the density functions
+  d1950<-density(df$data[which(df$ClimPrd==0)])
+  y1950<-approxfun(d1950$x, d1950$y)
+  ymax1950<-y1950(mean(df$data[which(df$ClimPrd==0)]))
+  d1981<-density(df$data[which(df$ClimPrd==1)])
+  y1981<-approxfun(d1981$x, d1981$y)
+  ymax1981<-y1981(mean(df$data[which(df$ClimPrd==1)]))
+  ylimvector<-c(ymax1950,ymax1981)
+  ymaxdensity<-(max(ylimvector)+(0.15*max(ylimvector)))
+  densityylim<-c(0,ymaxdensity)
+
+  #Plotting
+  png(plotname, width = 7, height = 4, units = 'in', res = 800)
+  layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
+  par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
+  boxplot(data~ClimPrd, data=df, col=plotcolors, las=1
+          ,xlab=Xaxislab.plota, xaxt="n", ylab="", yaxt="n")
+  axis(1,c(1,2),Xaxiscat.plota)
+  axis(2, las=1)
+  mtext(side=2,Yaxislab.plota, line=2.85)
+  par(mar = c(4.3, 0, 1.4, 2.1))
+  plot(density(ClmtPrd1)
+       ,xlim=c(min(df$data),max(df$data))
+       ,ylim=densityylim
+       ,las=1,xlab=Xaxislab.plotb, ylab="",yaxt="n"
+       ,main="",lty=3,lwd=2,col=ClmtPrd1color)
+  segments(mean(ClmtPrd1),0, mean(ClmtPrd1), 
+           ymax1950,lwd=2,lty=3,col=ClmtPrd1color)
+  lines(density(ClmtPrd2), col=ClmtPrd2color, 
+        xlim=c(min(df$data),max(df$data)), lwd=2)
+  segments(mean(ClmtPrd2),0,mean(ClmtPrd2), 
+           ymax1981,lwd=2,col=ClmtPrd2color)
+  axis(side=4,las=1)
+  mtext(side=4,Yaxislab.plotb,line=2.75)
+  dev.off()
+}
+
+plotfnct(MAT.temp)
+```
+![](Objective1.png)
+**Figure 2:** Mean annual temperature (F), MAT, across the United States of America (including Hawaii and Alaska) increased from baseline conditions, 1950-1980.  A boxplot of the means (leftpanel) and density function describe the mean, range, and frequency of temperatures observed (rightpanel).
 ```{r plot2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 ClmtPrd0<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==0)])
 ClmtPrd1<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==1)])
@@ -187,7 +226,7 @@ Llabelsinteractionplot<-0.985
 
 PlotAyaxislabel<-"MAT (F)"
 PlotAxaxislabel<-"Climate Period"
-PlotAxaxis<-c("1950-80","1981-2008")
+PlotAxaxis<-c("1950-80","1981-2010")
 
 barplotvector<-MAT.diff.rgnprd$changetemp
 barplotlabels<-MAT.diff.rgnprd$region
@@ -214,6 +253,7 @@ plotfnct2<-function(df){
   barplot(barplotvector, col=RegionColors, las=1, 
           ylim=PlotBYaxislim,
           yaxt="n")
+  abline(h=0)
   text(cex=1, x=xlab.barplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
   mtext(side=4,PlotBaxislabel, line=2.5)
   axis(side=4, las=1)
@@ -224,33 +264,12 @@ plotfnct2<-function(df){
 plotfnct2(MAT.rgnprd)
 
 ```
-
 ![](Objective2.png)
-Figure 2: 
+**Figure 3:** Mean annual temperature (F), MAT, increased in 11 climate regions from baseline conditions, 1950-1980.  The interaction between climate period and region (leftpanel) shows temperatures increased in all 11 regions, while the change in MAT (rightpanel) describes the magnitude of the change in each region.
 
-###*US climate warms from 1950 - 2008*
-```{r code OBJ3, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
-#Objective 3---------
-#***********************************************
-MAP<-MAweather(precip)
-
-MAweather.ST<-function(df){
-  df<-left_join(df,ClmtRgns,by="state")
-  df$ClimPrd<-cut(df$year, c((min(df$year)-1),1980,(max(df$year))+1), labels=c(0,1))
-  MAT.rgnprd<-aggregate(df$data,by=list(df$ClimPrd,df$state), mean)
-  names(MAT.rgnprd)[3]<-paste("data") 
-  names(MAT.rgnprd)[1]<-paste("ClimPrd") 
-  names(MAT.rgnprd)[2]<-paste("region")
-  return(MAT.rgnprd)
-}
-
-MAP.rgnprd<-MAweather.ST(precip)
-MAP.diff.rgnprd<-MAweather.RGNdiff(MAP.rgnprd)
-
-```
 ```{r plot3, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 Xaxislab.plota<-"Climate Period"
-Xaxiscat.plota<-c("1950-80","1981-2008")
+Xaxiscat.plota<-c("1950-80","1981-2010")
 Yaxislab.plota<-"MAP (in)"
 Xaxislab.plotb<-"MAP (in)"
 Yaxislab.plotb<-"Density"
@@ -280,21 +299,26 @@ Rlabelsinteractionplot<-2.015
 
 PlotAyaxislabel<-"MAP (in)"
 PlotAxaxislabel<-"Climate Period"
-PlotAxaxis<-c("1950-80","1981-2008")
+PlotAxaxis<-c("1950-80","1981-2010")
 
 barplotvector<-MAP.diff.rgnprd$changetemp
 barplotlabels<-MAP.diff.rgnprd$region
-PlotBYaxislim<-c(0,max(MAP.diff.rgnprd$changetemp)+0.25)
+PlotBYaxislim<-c((min(MAP.diff.rgnprd$changetemp)-(min(MAP.diff.rgnprd$changetemp)*0.15)),max(MAP.diff.rgnprd$changetemp)+0.25)
 xlab.barplot<-c(0.7,1.93,3.17)
-PlotBaxislabel<-"Change MAP (F)"
+PlotBaxislabel<-"Change MAP (in)"
 plotname2<-"Objective3b.png"
 
 plotfnct2(MAP.rgnprd)
 
 ```
 ![](Objective3.png)
-Figure 3: Mean annual Precipitation (in.), MAP, across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
+**Figure 4:** Mean annual precipitation (in), MAP, in three states increased from baseline conditions, 1950-1980.  A boxplot of the means (leftpanel) and density function describe the mean, range, and frequency of temperatures observed (rightpanel).
 
 ![](Objective3b.png)
+**Figure 5:** Mean annual precipitation (in), MAP, increased in OH and TN, while it decreased slightly in AL, from baseline conditions, 1950-1980.  The interaction between climate period and state (leftpanel) shows precipitation increased in most states, while the change in MAP (rightpanel) describes the magnitude of the change in each state.
 
-Figure 3: Mean annual Precipitation (in.), MAP, across the United States of America (including Hawaii and Alaska) increased in 1981-2008 from baseline conditions, 1950-1980.
+##**Discussion**
+
+We observed evidence of climate warming across the eleven regions of the United States between 1950-2010.  We observed the largest magnitude of change in regions with higher latitudes, specifically in Alaska and the northern middle of the continental US.  Though the northwest and northeast are approximately the same latitude as the regions in the north and middle of the continental US, they did not experience the same magnitude of warming; perhaps because both regions are buffered by oceans on either side.  We observed the smallest increases in temperature in the south regions across the continental US and in Hawaii, where latitudes are lower.  Changes in precipitation increased overall, but varied in the three states selected.  It is more difficult to predict how changing temperature will effect precipitation, as landscape features, such as mountains, lakes, and oceans, play an equally important role in precipitation.  Our work adds to the growing consensus that climate warming is altering surface temperature and precipitation patterns in the United States.   
+
+###**Literature Cites:**
