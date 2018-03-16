@@ -1,7 +1,6 @@
 
 dir()
 
-#1) Can we see climate warming for ourselves by analyzing these data?
 #2) In what parts of the country are temperatures getting warmer? Are there any parts that actually got colder over 1950-2010?
 #3) Can we say, based on these data, What change has occurred in precipitation over the period?
 
@@ -21,8 +20,14 @@ precip<-readRDS("USAAnnualPcpn1950_2008.rds")
 temp<-readRDS("USAAnnualTemp1950_2008.rds")
 ClmtRgns<-read.csv("ClimateRegionsUSA.csv")
 
-#Clean data
+#Clean data--------
 #***********************************************
+
+#Function to clean temperature and precipitation data:
+#Step 1: remove NA from the dataframe
+#Step 2: remove weather stations with less than two years data
+#return: a cleaned weather matrix
+
 WthrStnClean<-function(df){
   df<-na.exclude(df)
   df["latlon"]<-paste(df$lat,df$lon)
@@ -50,23 +55,27 @@ precip<-WthrStnClean(precip)
 #Objective 1---------
 #***********************************************
 
-meanUSweather<-function(df){
+#Can we see climate warming for ourselves by analyzing these data?
+#Step 1: calculate mean annual tempearture [aggregate]
+#Step 2: create a time period category [1950-1980, 1981-2010]
+#Step 3: boxplot and density functions of MAT by climate period 
+
+
+MAweather<-function(df){
   MAT<-aggregate(df$data,by=list(df$year), mean)
   names(MAT)[2]<-paste("data") 
   names(MAT)[1]<-paste("year") 
-  MAT["ClimPrd"]<-NA
-  for(i in 1:NROW(MAT)){
-    MAT$ClimPrd[i]<-if(MAT$year[i]<=1980){0}else{1}
-  }
+  MAT$ClimPrd<-cut(MAT$year, c((min(MAT$year)-1),1980,(max(MAT$year))+1), labels=c(0,1))
   return(MAT)
 }
 
-MAT.temp<-meanUSweather(temp)
+MAT.temp<-MAweather(temp)
 
+#setting the many plot parameters
 Xaxislab.plota<-"Climate Period"
 Xaxiscat.plota<-c("1950-80","1981-2008")
-Yaxislab.plota<-"Mean Annual Temp. (F)"
-Xaxislab.plotb<-"Mean Annual Temp.(F)"
+Yaxislab.plota<-"MAT (F)"
+Xaxislab.plotb<-"MAT (F)"
 Yaxislab.plotb<-"Density"
 ClmtPrd1color<-"grey27"
 ClmtPrd2color<-"red"
@@ -78,6 +87,7 @@ ClmtPrd2<-c(MAT.temp$data[which(MAT.temp$ClimPrd==1)])
 
 
 plotfnct<-function(df){
+  #Creating the density functions
   d1950<-density(df$data[which(df$ClimPrd==0)])
   y1950<-approxfun(d1950$x, d1950$y)
   ymax1950<-y1950(mean(df$data[which(df$ClimPrd==0)]))
@@ -85,6 +95,7 @@ plotfnct<-function(df){
   y1981<-approxfun(d1981$x, d1981$y)
   ymax1981<-y1981(mean(df$data[which(df$ClimPrd==1)]))
 
+  #Plotting
   png(plotname, width = 7, height = 4, units = 'in', res = 800)
   layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
   par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
@@ -113,138 +124,135 @@ plotfnct(MAT.temp)
 
 #Objective 2---------
 #***********************************************
-temp<-left_join(temp,ClmtRgns,by="state")
-MAT.region<-aggregate(temp$data,by=list(temp$year,temp$region), mean)
-names(MAT.region)[3]<-paste("data") 
-names(MAT.region)[1]<-paste("year") 
-names(MAT.region)[2]<-paste("region") 
 
-MAT.region["ClimPrd"]<-NA
-for(i in 1:NROW(MAT.region)){
-  MAT.region$ClimPrd[i]<-if(MAT.region$year[i]<=1980){0}else{1}
+MAweather.RGN<-function(df){
+  df<-left_join(df,ClmtRgns,by="state")
+  df$ClimPrd<-cut(df$year, c((min(df$year)-1),1980,(max(df$year))+1), labels=c(0,1))
+  MAT.rgnprd<-aggregate(df$data,by=list(df$ClimPrd,df$region), mean)
+  names(MAT.rgnprd)[3]<-paste("data") 
+  names(MAT.rgnprd)[1]<-paste("ClimPrd") 
+  names(MAT.rgnprd)[2]<-paste("region")
+  return(MAT.rgnprd)
 }
 
-MAT.rgnprd<-aggregate(MAT.region$data,by=list(MAT.region$ClimPrd,MAT.region$region), mean)
-names(MAT.rgnprd)[3]<-paste("data") 
-names(MAT.rgnprd)[1]<-paste("ClimPrd") 
-names(MAT.rgnprd)[2]<-paste("region") 
+MAweather.RGNdiff<-function(df){
+  MAT.diff.rgnprd<-aggregate(df$data,by=list(df$region),diff)
+  names(MAT.diff.rgnprd)[1]<-paste("region") 
+  names(MAT.diff.rgnprd)[2]<-paste("changetemp")
+  MAT.diff.rgnprd<-MAT.diff.rgnprd[rev(order(MAT.diff.rgnprd$changetemp)),]
+  return(MAT.diff.rgnprd)
+}
+
+MAT.rgnprd<-MAweather.RGN(temp)
+MAT.diff.rgnprd<-MAweather.RGNdiff(MAT.rgnprd)
+
 ClmtPrd0<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==0)])
 ClmtPrd1<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==1)])
 ClmtPrd1labels<-(MAT.rgnprd$region[which(MAT.rgnprd$ClimPrd==1)])
 clmtPrddf<-data.frame(ClmtPrd1, ClmtPrd1labels)
 clmtPrddf<-clmtPrddf[rev(order(clmtPrddf$ClmtPrd1)),]
 clmtPrddf["clmtPrddfabv"]<-c("HI","SE","S","W","C","SW","NW","NE","NEC","NWC","AK")
-leftside<-  c("",  "", "S","","" ,"SW","","NE","","NWC","")
+leftside<-c("","","S","","" ,"SW","","NE","","NWC","")
 rightside<-c("HI","SE","","W","C","", "NW","","NEC","","AK")  
+lablocations<-clmtPrddf$ClmtPrd1
 
-MAT.diff.rgnprd<-aggregate(MAT.rgnprd$data,by=list(MAT.rgnprd$region),diff)
-names(MAT.diff.rgnprd)[1]<-paste("region") 
-names(MAT.diff.rgnprd)[2]<-paste("changetemp")
-MAT.diff.rgnprd<-MAT.diff.rgnprd[rev(order(MAT.diff.rgnprd$changetemp)),]
-
-#plots
-
-layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
-par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
 NumRegions<-NROW(unique(ClmtRgns$region))
 RegionColors<-heat.colors(NumRegions)
-with(MAT.region,interaction.plot(ClimPrd,region,data, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n"), xlim=c(0,5))
-text(2.025,clmtPrddf$ClmtPrd1,rightside, adj=0, cex=0.75)
-text(0.975,clmtPrddf$ClmtPrd1,leftside, adj=1, cex=0.75)
-axis(side=2, las=1)
-mtext("Mean Annual Temp. (F)", side=2, line=2.25)
-mtext("Climate Period", side=1, line=2)
-xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
-xvalclmtprd1<-rep(2,NROW(ClmtPrd1))
-#points(xvalclmtprd0,ClmtPrd0, pch=22)
-#points(xvalclmtprd1,ClmtPrd1, pch=22)
-axis(1,c(1,2),c("1950-80","1981-2008"))
-par(mar = c(4.3, 0, 1.4, 2.1))
+Rlabelsinteractionplot<-2.015
+Llabelsinteractionplot<-0.985
+
+PlotAyaxislabel<-"MAT (F)"
+PlotAxaxislabel<-"Climate Period"
+PlotAxaxis<-c("1950-80","1981-2008")
+
 barplotvector<-MAT.diff.rgnprd$changetemp
 barplotlabels<-MAT.diff.rgnprd$region
-barplot(barplotvector, col=RegionColors, las=1, 
-        ylim=c(0,max(MAT.diff.rgnprd$changetemp)+0.25),
-        yaxt="n")
-xlabarplot<-c(0.7,1.93,3.17,4.33,5.48,6.8,7.88,9.11,10.34,11.58,12.81)
-text(cex=1, x=xlabarplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
-mtext(side=4,"Change Mean Annual Temp. (F)", line=2.5)
-axis(side=4, las=1)
-box()
+PlotBYaxislim<-c(0,max(MAT.diff.rgnprd$changetemp)+0.25)
+xlab.barplot<-c(0.7,1.93,3.17,4.33,5.48,6.8,7.88,9.11,10.34,11.58,12.81)
+PlotBaxislabel<-"Change MAT (F)"
+plotname2<-"Objective2.png"
 
+#plots
+plotfnct2<-function(df){
+  png(plotname2, width = 7, height = 4, units = 'in', res = 800)
+  layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
+  par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
+  with(df,interaction.plot(ClimPrd,region,data, lwd=3, las=1, ylab="",xlab="", xaxt="n", legend=F, yaxt="n"))
+  text(Rlabelsinteractionplot,lablocations,rightside, adj=0, cex=0.6)
+  text(Llabelsinteractionplot,lablocations,leftside, adj=1, cex=0.6)
+  axis(side=2, las=1)
+  mtext(PlotAyaxislabel, side=2, line=2.25)
+  mtext(PlotAxaxislabel, side=1, line=2)
+  xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
+  xvalclmtprd1<-rep(2,NROW(ClmtPrd1))
+  axis(1,c(1,2),PlotAxaxis)
+  par(mar = c(4.3, 0, 1.4, 2.1))
+  barplot(barplotvector, col=RegionColors, las=1, 
+          ylim=PlotBYaxislim,
+          yaxt="n")
+  text(cex=1, x=xlab.barplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
+  mtext(side=4,PlotBaxislabel, line=2.5)
+  axis(side=4, las=1)
+  box()
+  dev.off()
+}
+
+plotfnct2(MAT.rgnprd)
 
 #Objective 3---------
 #***********************************************
-MAT.precip<-meanUSweather(precip)
+MAP<-MAweather(precip)
 
 Xaxislab.plota<-"Climate Period"
 Xaxiscat.plota<-c("1950-80","1981-2008")
-Yaxislab.plota<-"Mean Annual Precip. (in)"
-Xaxislab.plotb<-"Mean Annual Precip.(in)"
+Yaxislab.plota<-"MAP (in)"
+Xaxislab.plotb<-"MAP (in)"
 Yaxislab.plotb<-"Density"
 ClmtPrd1color<-"grey27"
-ClmtPrd2color<-"red"
-plotname<-"Objective1.png"
+ClmtPrd2color<-"blue"
+plotname<-"Objective3.png"
 plotcolors<-c(ClmtPrd1color,ClmtPrd2color)
 
-ClmtPrd1<-c(MAT.precip$data[which(MAT.precip$ClimPrd==0)])
-ClmtPrd2<-c(MAT.precip$data[which(MAT.precip$ClimPrd==1)])
+ClmtPrd1<-c(MAP$data[which(MAP$ClimPrd==0)])
+ClmtPrd2<-c(MAP$data[which(MAP$ClimPrd==1)])
 
-plotfnct(MAT.precip)
+plotfnct(MAP)
 
-precip<-left_join(precip,ClmtRgns,by="state")
-MAP.region<-aggregate(precip$data,by=list(precip$year,precip$state), mean)
-names(MAP.region)[3]<-paste("data") 
-names(MAP.region)[1]<-paste("year") 
-names(MAP.region)[2]<-paste("state") 
-
-MAP.region["ClimPrd"]<-NA
-for(i in 1:NROW(MAP.region)){
-  MAP.region$ClimPrd[i]<-if(MAP.region$year[i]<=1980){0}else{1}
+MAweather.ST<-function(df){
+  df<-left_join(df,ClmtRgns,by="state")
+  df$ClimPrd<-cut(df$year, c((min(df$year)-1),1980,(max(df$year))+1), labels=c(0,1))
+  MAT.rgnprd<-aggregate(df$data,by=list(df$ClimPrd,df$state), mean)
+  names(MAT.rgnprd)[3]<-paste("data") 
+  names(MAT.rgnprd)[1]<-paste("ClimPrd") 
+  names(MAT.rgnprd)[2]<-paste("region")
+  return(MAT.rgnprd)
 }
 
-MAP.rgnprd<-aggregate(MAP.region$data,by=list(MAP.region$ClimPrd,MAP.region$state), mean)
-names(MAP.rgnprd)[3]<-paste("data") 
-names(MAP.rgnprd)[1]<-paste("ClimPrd") 
-names(MAP.rgnprd)[2]<-paste("state") 
+MAP.rgnprd<-MAweather.ST(precip)
+MAP.diff.rgnprd<-MAweather.RGNdiff(MAP.rgnprd)
+
 ClmtPrd0<-(MAP.rgnprd$data[which(MAP.rgnprd$ClimPrd==0)])
 ClmtPrd1<-(MAP.rgnprd$data[which(MAP.rgnprd$ClimPrd==1)])
-ClmtPrd1labels<-(MAP.rgnprd$state[which(MAP.rgnprd$ClimPrd==1)])
+ClmtPrd1labels<-(MAP.rgnprd$region[which(MAP.rgnprd$ClimPrd==1)])
 clmtPrddf<-data.frame(ClmtPrd1, ClmtPrd1labels)
 clmtPrddf<-clmtPrddf[rev(order(clmtPrddf$ClmtPrd1)),]
+rightside<-c("AL","TN","OH")
+leftside<-c("","","")
+lablocations<-clmtPrddf$ClmtPrd1
 
-MAP.diff.rgnprd<-aggregate(MAP.rgnprd$data,by=list(MAP.rgnprd$state),diff)
-names(MAP.diff.rgnprd)[1]<-paste("state") 
-names(MAP.diff.rgnprd)[2]<-paste("changeprecip")
-MAP.diff.rgnprd<-MAP.diff.rgnprd[rev(order(MAP.diff.rgnprd$changeprecip)),]
+NumRegions<-NROW(unique(ClmtRgns$region))
+RegionColors<-rev(colorRampPalette(brewer.pal(9,'Blues'))(3))
+Rlabelsinteractionplot<-2.015
 
-#plots
-quartz()
+PlotAyaxislabel<-"MAP (in)"
+PlotAxaxislabel<-"Climate Period"
+PlotAxaxis<-c("1950-80","1981-2008")
 
-layout(matrix(1:2, ncol = 2), widths = 1, heights = 1, respect = FALSE)
-par(mar = c(4.3, 2.1, 1.4, 0), oma=c(3,3,3,3))
-RegionColors.1<-colorRampPalette(brewer.pal(9,'Blues'))(9)
-RegionColors<-c(RegionColors.1[9],RegionColors.1[7],RegionColors.1[5])
-with(MAP.region,interaction.plot(ClimPrd,state,data,
-                 lwd=3, las=1, ylab="",xlab="", xaxt="n", 
-                 legend=F, yaxt="n"))
-text(2.025,ClmtPrd1,clmtPrddf$ClmtPrd1labels, adj=0, cex=0.75)
-axis(side=2, las=1)
-mtext("Mean Annual Temp. (F)", side=2, line=2.25)
-mtext("Climate Period", side=1, line=2)
-xvalclmtprd0<-rep(1,NROW(ClmtPrd0))
-xvalclmtprd1<-rep(2,NROW(ClmtPrd1))
-#points(xvalclmtprd0,ClmtPrd0, pch=22)
-#points(xvalclmtprd1,ClmtPrd1, pch=22)
-axis(1,c(1,2),c("1950-80","1981-2008"))
-par(mar = c(4.3, 0, 1.4, 2.1))
-barplotvector<-MAP.diff.rgnprd$changeprecip
-barplotlabels<-MAP.diff.rgnprd$state
-barplot(barplotvector, col=RegionColors, las=1, 
-        ylim=c(0,max(MAP.diff.rgnprd$changeprecip)+0.25),
-        yaxt="n")
-xlabarplot<-c(0.7,1.93,3.17)
-text(cex=1, x=xlabarplot, y=-0.05, barplotlabels, xpd=TRUE, srt=90, adj=1)
-mtext(side=4,"Change Mean Annual Temp. (F)", line=2.5)
-axis(side=4, las=1)
-box()
+barplotvector<-MAP.diff.rgnprd$changetemp
+barplotlabels<-MAP.diff.rgnprd$region
+PlotBYaxislim<-c(0,max(MAP.diff.rgnprd$changetemp)+0.25)
+xlab.barplot<-c(0.7,1.93,3.17)
+PlotBaxislabel<-"Change MAP (F)"
+plotname2<-"Objective3b.png"
 
+plotfnct2(MAP.rgnprd)
