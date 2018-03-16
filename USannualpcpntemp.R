@@ -20,6 +20,16 @@ precip<-readRDS("USAAnnualPcpn1950_2008.rds")
 temp<-readRDS("USAAnnualTemp1950_2008.rds")
 ClmtRgns<-read.csv("ClimateRegionsUSA.csv")
 
+subsetyears<-function(df){
+  df$Year.cut<-cut(df$year, c((min(df$year)-1),2010,(max(df$year))+1), labels=c(0,1))
+  df<-subset(df,Year.cut==0)
+  return(df)
+}
+
+temp<-subsetyears(temp)
+precip<-subsetyears(precip)
+
+
 #Clean data--------
 #***********************************************
 
@@ -73,7 +83,7 @@ MAT.temp<-MAweather(temp)
 
 #setting the many plot parameters
 Xaxislab.plota<-"Climate Period"
-Xaxiscat.plota<-c("1950-80","1981-2008")
+Xaxiscat.plota<-c("1950-80","1981-2010")
 Yaxislab.plota<-"MAT (F)"
 Xaxislab.plotb<-"MAT (F)"
 Yaxislab.plotb<-"Density"
@@ -163,7 +173,7 @@ Llabelsinteractionplot<-0.985
 
 PlotAyaxislabel<-"MAT (F)"
 PlotAxaxislabel<-"Climate Period"
-PlotAxaxis<-c("1950-80","1981-2008")
+PlotAxaxis<-c("1950-80","1981-2010")
 
 barplotvector<-MAT.diff.rgnprd$changetemp
 barplotlabels<-MAT.diff.rgnprd$region
@@ -256,3 +266,5 @@ PlotBaxislabel<-"Change MAP (F)"
 plotname2<-"Objective3b.png"
 
 plotfnct2(MAP.rgnprd)
+
+

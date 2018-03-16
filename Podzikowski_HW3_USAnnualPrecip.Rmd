@@ -5,19 +5,28 @@ date: "3/12/2018"
 output: pdf_document
 ---
 
+<!--Search:
+LYP.COMMENT: for my modularity comments
+-->
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+<!--This chunk will:
+1. load my pacakges
+2. upload my data
+3. clean my data (subest to timeframe, remove NA and <40YR data)
+
+All other chunks are dependant on this chunk
+-->
 ```{r pckgs uplddtfrm clndt, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #packages---------
 #***********************************************
-library(maptools)
-#data(wrld_simpl)
 library(colorRamps)
 library(dplyr)
 library(RColorBrewer)
-
+#LYP.COMMENT: Modularity lesson 10, use packages for commonly used functions
 
 #upload dataframes---------
 #***********************************************
@@ -26,14 +35,17 @@ precip<-readRDS("USAAnnualPcpn1950_2016.rds")
 temp<-readRDS("USAAnnualTemp1950_2016.rds")
 ClmtRgns<-read.csv("ClimateRegionsUSA.csv")
 
+MaxYear<-2010
+
 subsetyears<-function(df){
-df$Year.cut<-cut(df$year, c((min(df$year)-1),2010,(max(df$year))+1), labels=c(0,1))
+df$Year.cut<-cut(df$year, c((min(df$year)-1),MaxYear,(max(df$year))+1), labels=c(0,1))
 df<-subset(df,Year.cut==0)
 return(df)
 }
 
 temp<-subsetyears(temp)
 precip<-subsetyears(precip)
+names(temp)#data is now called variable, I need to fix it
 
 names(temp)[3]<-paste("data") 
 
@@ -44,6 +56,7 @@ names(temp)[3]<-paste("data")
 #Step 1: remove NA from the dataframe
 #Step 2: remove weather stations with less than two years data
 #return: a cleaned weather matrix
+#Step 3: subset the data to the correct timeframe 1950-2010
 
 WthrStnClean<-function(df){
   df<-na.exclude(df)
@@ -82,14 +95,20 @@ Temperature and precipitation data were downloaded from the Applied Climate Info
 **Figure 1:**  Map of US climate regions used to classify states. Image curtosy of the National Oceanic and Atmospheric Administration website: <https://www.ncdc.noaa.gov/monitoring-references/maps/us-climate-regions.php>
 
 ##**Results**
-```{r code OBJ1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+<!--LYP.COMMENT: Modularity lesson 4, define modules precisely in advanced
+
+This chunk will:
+create the function to calculate:
+1. mean annual weather [aggregate]
+2. create time frame categoies
+
+OBJ 2, and OBJ 3 are dependant on this chunk
+-->
+```{r code OBJ 1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #Objective 1---------
 #***********************************************
 
-#Can we see climate warming for ourselves by analyzing these data?
-#Step 1: calculate mean annual tempearture [aggregate]
-#Step 2: create a time period category [1950-1980, 1981-2010]
-#Step 3: boxplot and density functions of MAT by climate period 
+
 
 
 MAweather<-function(df){
@@ -103,7 +122,15 @@ MAweather<-function(df){
 MAT.temp<-MAweather(temp)
 
 ```
-```{r code OBJ2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+
+<!--create the function to calculate:
+#Step 1: calculate mean annual tempearture by climate ragion[aggregate]
+#Step 2: calculate the change in mean annual temp by region
+
+OBJ 3 is dependant on this chunk
+#LYP.COMMENT: Modularity lesson 8, be aware of dependancies
+-->
+```{r code OBJ 2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 MAweather.RGN<-function(df){
   df<-left_join(df,ClmtRgns,by="state")
   df$ClimPrd<-cut(df$year, c((min(df$year)-1),1980,(max(df$year))+1), labels=c(0,1))
@@ -126,11 +153,21 @@ MAT.rgnprd<-MAweather.RGN(temp)
 MAT.diff.rgnprd<-MAweather.RGNdiff(MAT.rgnprd)
 
 ```
-Mean annual temperature increased `r round(mean(MAT.temp$data[which(MAT.temp$ClimPrd==1)]-mean(MAT.temp$data[which(MAT.temp$ClimPrd==0)])),2)` F from 1950-1980 to 1981-2010.  With increased temperatures we observed a flattening of the density function, indicating a change in the likelihood of events that would have been rare under baseline climate conditions (Fig. 2).  In all US climate regions mean annual temperature increased in 1981-2010.  We observed the largest change in mean annual temperature in Alaska, the NW central (northern Rockies and plains), and the NE central(upper midwest) regions.  We observed the smallest increases in mean annual temperature in the southeast, hawaii, southwest, and southern regions (Fig. 3).  
+Mean annual temperature increased `r round(mean(MAT.temp$data[which(MAT.temp$ClimPrd==1)]-mean(MAT.temp$data[which(MAT.temp$ClimPrd==0)])),2)` F from 1950-1980 to 1981-2010.  With increased temperatures we also observed a flattening of the density function, indicating more time spent at a wider range of temperatures than under baseline climate conditions (Fig. 2).  In all US climate regions mean annual temperature increased in 1981-2010.  We observed the largest change in mean annual temperature in Alaska, the NW central (northern Rockies and plains), and the NE central(upper midwest) regions.  We observed the smallest increases in mean annual temperature in the southeast, hawaii, southwest, and southern regions (Fig. 3).  
 
-```{r code OBJ3, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+<!--This chunk:
+repeats chunk from OBJ1 and OBJ2 for precipitaiton,
+-->
+```{r code OBJ 3, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #Objective 3---------
 #***********************************************
+#LYP.COMMENT: Modularity lesson 7, write pseudocode
+
+#Can we see precipitation changes for ourselves by analyzing these data?
+#Step 1: calculate mean annual precipitation [aggregate]
+#Step 2: create a time period category [1950-1980, 1981-2010]
+#Step 3: boxplot and density functions of MAP by climate period 
+
 MAP<-MAweather(precip)
 
 MAweather.ST<-function(df){
@@ -151,6 +188,12 @@ MAP.diff.rgnprd<-MAweather.RGNdiff(MAP.rgnprd)
 Mean annual precipitation increased `r round(mean(MAP$data[which(MAP$ClimPrd==1)]-mean(MAP$data[which(MAP$ClimPrd==0)])),2)` inches from 1950-1980 to 1981-2010 (Fig. 4).  We observed the largest change in mean annual precipitation in Ohio and the slight decrease in mean annual precipitation in Alabama (Fig. 5).  
 
 ```{r plot1, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+#Ploting mean weather:
+#step 1: creating boxplot
+#step 2: density plot
+
+#LYP.COMMENT: Modularity lesson 1: do not type constants into your code
+
 #setting the many plot parameters
 Xaxislab.plota<-"Climate Period"
 Xaxiscat.plota<-c("1950-80","1981-2010")
@@ -209,6 +252,10 @@ plotfnct(MAT.temp)
 ![](Objective1.png)
 **Figure 2:** Mean annual temperature (F), MAT, across the United States of America (including Hawaii and Alaska) increased from baseline conditions, 1950-1980.  A boxplot of the means (leftpanel) and density function describe the mean, range, and frequency of temperatures observed (rightpanel).
 ```{r plot2, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+#Ploting mean weather by region/state:
+#step 1: creating interaction plot
+#step 2: plotting change in weather (barplot, highest-lowest)
+
 ClmtPrd0<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==0)])
 ClmtPrd1<-(MAT.rgnprd$data[which(MAT.rgnprd$ClimPrd==1)])
 ClmtPrd1labels<-(MAT.rgnprd$region[which(MAT.rgnprd$ClimPrd==1)])
@@ -267,7 +314,9 @@ plotfnct2(MAT.rgnprd)
 ![](Objective2.png)
 **Figure 3:** Mean annual temperature (F), MAT, increased in 11 climate regions from baseline conditions, 1950-1980.  The interaction between climate period and region (leftpanel) shows temperatures increased in all 11 regions, while the change in MAT (rightpanel) describes the magnitude of the change in each region.
 
-```{r plot3, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+```{r plots 3 4, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
+#Change all of the variables and run functions used to make figure 2 & 3
+
 Xaxislab.plota<-"Climate Period"
 Xaxiscat.plota<-c("1950-80","1981-2010")
 Yaxislab.plota<-"MAP (in)"
@@ -319,6 +368,11 @@ plotfnct2(MAP.rgnprd)
 
 ##**Discussion**
 
-We observed evidence of climate warming across the eleven regions of the United States between 1950-2010.  We observed the largest magnitude of change in regions with higher latitudes, specifically in Alaska and the northern middle of the continental US.  Though the northwest and northeast are approximately the same latitude as the regions in the north and middle of the continental US, they did not experience the same magnitude of warming; perhaps because both regions are buffered by oceans on either side.  We observed the smallest increases in temperature in the south regions across the continental US and in Hawaii, where latitudes are lower.  Changes in precipitation increased overall, but varied in the three states selected.  It is more difficult to predict how changing temperature will effect precipitation, as landscape features, such as mountains, lakes, and oceans, play an equally important role in precipitation.  Our work adds to the growing consensus that climate warming is altering surface temperature and precipitation patterns in the United States.   
+We observed evidence of climate warming across the eleven regions of the United States between 1950-2010.  We observed the largest magnitude of change in regions with higher latitudes, specifically in Alaska and the northern middle of the continental US.  Though the northwest and northeast are approximately the same latitude, they did not experience the same magnitude of warming; perhaps because both regions are buffered by oceans on either side.  We observed the smallest increases in temperature closer to the equator, in the southern regions across the continental US and in Hawaii.  Changes in precipitation increased overall, but varied in the three states selected.  It is more difficult to predict how changing temperature will effect precipitation, as landscape features, such as mountains, lakes, and oceans, play an equally important role in precipitation.  Our work adds to the growing consensus that climate warming is altering surface temperature and precipitation patterns in the United States.   
 
-###**Literature Cites:**
+###**Literature Cited:**
+
+Smith, J.B. and G.J. Pitts. 1997. Regional climate change scenarios for vulnerability and
+adaptation assessments. Climatic Change 36, 3-21.
+
+Thomas R. Karl and Walter James Koss, 1984: "Regional and National Monthly, Seasonal, and Annual Temperature Weighted by Area, 1895-1983." Historical Climatology Series 4-3, National Climatic Data Center, Asheville, NC, 38 pp.
