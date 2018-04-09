@@ -5,6 +5,16 @@ date: "3/12/2018"
 output: pdf_document
 ---
 
+<!--***DAN: To find my comments search for "***DAN:"-->
+
+<!--***DAN: Your use of git is good in that you have enough commits (you are actually using it as a working tool instead of just adding files at the end) and you have informative commit messages. But you are committing all sorts of non-text files (pngs, rdss, etc.). Git does not store revisions of such files efficiently, so typically they are not added, though with some exceptions (see discussion on this in lecture).-->
+
+<!--***DAN: Your write up is great! Excellent use of outside reading, and very slick figures! Many of them are publication quality, which is really saying something for a short-turnaround assignment!-->
+
+<!--***DAN: Your use of modularity is also great, especially your use of functions to do tasks that need doing on more than one call, and labelling your dependencies for chunks.-->
+
+<!--***DAN: Overall great work! 10/10-->
+
 <!--Search:
 LYP.COMMENT: for my modularity comments
 -->
@@ -20,6 +30,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 All other chunks are dependant on this chunk
 -->
+<!--***DAN: Great commenting of the chunk!-->
 ```{r pckgs uplddtfrm clndt, echo=FALSE, eval=TRUE, message=FALSE, include=FALSE}
 #packages---------
 #***********************************************
@@ -27,6 +38,7 @@ library(colorRamps)
 library(dplyr)
 library(RColorBrewer)
 #LYP.COMMENT: Modularity lesson 10, use packages for commonly used functions
+#***DAN: good
 
 #upload dataframes---------
 #***********************************************
@@ -81,7 +93,7 @@ WthrStnClean<-function(df){
 
 temp<-WthrStnClean(temp)
 precip<-WthrStnClean(precip)
-
+#***DAN: great modularity here!
 
 ```
 
@@ -89,8 +101,13 @@ precip<-WthrStnClean(precip)
 Altering the balance of greenhouse gases in Earth's atmosphere has elevated temperatures and altered precipitation regimes across the globe; yet at regional scales climate change can have positive, negative, and even no effect on both.  Elevated atmospheric concentrations of carbon dioxide, CO~2~, are largely implicated in global climate changes over the last century.  Independent of mechanism, determining the direction of temperature and precipitation changes on a regional scale is crucial for mitigating the effects of climate change.  We ask if the temperature and precipitation in N. America, specifically in the United States, has increased since the mid-1900s?  We hope our work will shed light on continental scale changes in climate over the last half a century.   
 
 ##**Methods**
-Temperature and precipitation data were downloaded from the Applied Climate Information System. Weather stations with less than 40 years worth of available data were removed to ensure short-term, year-to-year fluctuations did not bias our analysis.  We evaluated whether climate changed by comparing mean temperature and precipitation over ~30 year time periods.  We defined baseline conditions as 1950-1980 (Smith and Pitts 1997) and 1981-2010 as the climate change period for comparison.  We further defined climate regions to explore the interaction between climate and region in the United States.  We classified temperature into regional means using nine groups in the contiguous United States (Karl and Koss 1984); Alaska and Hawaii were grouped into their own climate regions totaling 11.  We only had precipitation data from three states, Ohio, Tennessee, and Alabama; rather than using regions, we grouped by state to evaluate the interaction between climate and small-scale changes in precipitation.   
+Temperature and precipitation data were downloaded from the Applied Climate Information System. Weather stations with less than 40 years worth of available data were removed to ensure short-term, year-to-year fluctuations did not bias our analysis.  
+<!--***DAN:Well, it helps anyway, though "ensure" is too strong-->
+We evaluated whether climate changed by comparing mean temperature and precipitation over ~30 year time periods.  We defined baseline conditions as 1950-1980 (Smith and Pitts 1997) and 1981-2010 as the climate change period for comparison. 
+<!--***DAN: Why no gap between your baseline and comparison periods?-->
+We further defined climate regions to explore the interaction between climate and region in the United States.  We classified temperature into regional means using nine groups in the contiguous United States (Karl and Koss 1984); Alaska and Hawaii were grouped into their own climate regions totaling 11.  We only had precipitation data from three states, Ohio, Tennessee, and Alabama; rather than using regions, we grouped by state to evaluate the interaction between climate and small-scale changes in precipitation.   
 ![](us-climate-regions.png)
+<!--***DAN: Excellent use of outside reading for this assignment.-->
 
 **Figure 1:**  Map of US climate regions used to classify states. Image curtosy of the National Oceanic and Atmospheric Administration website: <https://www.ncdc.noaa.gov/monitoring-references/maps/us-climate-regions.php>
 
